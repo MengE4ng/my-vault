@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+  Password Vault Pro — single-file, offline, zero network requests.
+
+  Security design:
+  - AES-256-GCM authenticated encryption (tampering = decryption fails)
+  - Key derived with PBKDF2-SHA256, 600,000 iterations (OWASP recommendation)
+  - Fresh random 16-byte salt + 12-byte IV for every encryption
+  - Key is non-extractable; master key and plaintext are never stored or logged
+  - Fields auto-clear after 2 minutes of inactivity
+  - Output: salt + iv + ciphertext encoded as Pali-style words in Khmer
+    script (1 byte = 1 word from a fixed 256-word list), so the note
+    looks like scripture or chanting notes instead of encrypted data
+  - Also decrypts the older formats ("v2." base64 and legacy base64)
+-->
+<title>Password vault</title>
+<style>
+  :root {
+    --bg: #f5f3ee; --card: #ffffff; --ink: #1f2421; --muted: #6b7069;
+    --line: #d9d5cb; --accent: #2f5d50; --accent-ink: #ffffff;
+    --danger-bg: #faeceb; --danger-ink: #8c2f28;
+    --ok-bg: #e8f2ec; --ok-ink: #22543d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191c1a; --card: #222623; --ink: #e8e6df; --muted: #9aa097;
+      --line: #3a3f3b; --accent: #7fb8a4; --accent-ink: #14201c;
+      --danger-bg: #3a2422; --danger-ink: #f0a9a2;
+      --ok-bg: #223229; --ok-ink: #9fd3b6;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.6 -apple-system, "SF Pro Text", system-ui, sans-serif;
+    padding: 24px 16px 48px; max-width: 480px; margin: 0 auto;
+  }
+  h1 { font-size: 20px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 13px; margin: 4px 0 24px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .field { margin-bottom: 18px; }
+  input, textarea {
+    width: 100%; font: inherit; color: var(--ink); background: var(--card);
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+  }
+  textarea { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; resize: vertical; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  .keyrow { display: flex; gap: 8px; }
+  .keyrow input { flex: 1; }
+  .keyrow button { flex: 0 0 auto; width: 84px; }
+  .row { display: flex; gap: 10px; margin-bottom: 18px; }
+  button {
+    font: inherit; font-size: 15px; font-weight: 600; padding: 12px;
+    border-radius: 10px; border: 1px solid var(--line); background: var(--card);
+    color: var(--ink); cursor: pointer;
+  }
+  .row button { flex: 1; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button:active { transform: scale(0.98); }
+  .msg { display: none; font-size: 14px; padding: 10px 12px; border-radius: 10px; margin-bottom: 18px; }
+  #err { background: var(--danger-bg); color: var(--danger-ink); }
+  #ok  { background: var(--ok-bg); color: var(--ok-ink); }
+  #outwrap { display: none; }
+  #copy, #wipe { width: 100%; margin-top: 10px; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 28px; border-top: 1px solid var(--line); padding-top: 14px; }
+
+  /* ---------- Locky the padlock ---------- */
+  .mascot { display: flex; justify-content: center; margin-bottom: 8px; }
+  #locky { width: 84px; height: 84px; }
+  #shackle { transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: 24px 30px; }
+  #locky.open #shackle { transform: rotate(-28deg) translateY(-4px); }
+  #mouth-happy, #mouth-flat { transition: opacity 0.3s; }
+  #locky .blink { animation: blink 4s infinite; transform-origin: center; }
+  @keyframes blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.1); }
+  }
+  #locky.happy { animation: bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes bounce {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.15) rotate(-4deg); }
+    65% { transform: scale(0.95) rotate(3deg); }
+    100% { transform: scale(1); }
+  }
+  #locky.sad { animation: shake 0.5s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-7px); }
+    40% { transform: translateX(7px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #locky, #locky .blink, #shackle { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="mascot" aria-hidden="true">
+    <svg id="locky" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <g id="shackle">
+        <path d="M 24 30 L 24 20 A 8 8 0 0 1 40 20 L 40 30" fill="none"
+              stroke="var(--muted)" stroke-width="5" stroke-linecap="round"/>
+      </g>
+      <rect x="16" y="28" width="32" height="26" rx="8" fill="var(--accent)"/>
+      <g class="blink">
+        <circle cx="26" cy="39" r="2.6" fill="var(--accent-ink)"/>
+        <circle cx="38" cy="39" r="2.6" fill="var(--accent-ink)"/>
+      </g>
+      <path id="mouth-happy" d="M 27 46 Q 32 50 37 46" fill="none"
+            stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round" opacity="0"/>
+      <line id="mouth-flat" x1="28" y1="47" x2="36" y2="47"
+            stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round" opacity="1"/>
+    </svg>
+  </div>
+  <h1>Password vault</h1>
+  <p class="sub">Offline. Zero network requests. Fields auto-clear after 2 minutes.</p>
+
+  <div class="field">
+    <label for="pass">Master key (memorize it — it is never stored anywhere)</label>
+    <div class="keyrow">
+      <input type="password" id="pass" placeholder="Long passphrase, e.g. 4+ random words"
+             autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button id="show" type="button">Show</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="input">Text to encrypt, or the Khmer word list to decrypt</label>
+    <textarea id="input" rows="4" placeholder="Paste here"
+              autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+  </div>
+
+  <div class="row">
+    <button class="primary" id="enc">Encrypt</button>
+    <button id="dec">Decrypt</button>
+  </div>
+
+  <div class="msg" id="err"></div>
+  <div class="msg" id="ok"></div>
+
+  <div id="outwrap">
+    <label for="output">Result</label>
+    <textarea id="output" rows="4" readonly></textarea>
+    <button id="copy">Copy result</button>
+  </div>
+
+  <button id="wipe">Wipe all fields now</button>
+
+  <p class="note">
+    AES-256-GCM · PBKDF2-SHA256, 600,000 rounds · fresh random salt and IV every time ·
+    output disguised as Pali-style words in Khmer script.
+    The word list changes each run — that is normal; any version decrypts with the correct key.
+    If the encrypted text is modified by even one character, decryption refuses (tamper protection).
+    A forgotten master key means the data is gone forever — there is no reset.
+  </p>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const te = new TextEncoder();
+const td = new TextDecoder();
+
+const PREFIX = "v2.";            // marks the current format
+const ITERATIONS = 600000;       // current standard (OWASP)
+const LEGACY_ITERATIONS = 200000;// for text made with the older vault
+const SALT_LEN = 16;             // bytes
+const IV_LEN = 12;               // bytes (AES-GCM standard)
+const WIPE_AFTER_MS = 2 * 60 * 1000;
+
+/* ---------- word disguise ----------
+   Exactly 256 words: each byte value 0-255 maps to one word.
+   Words are built from Pali/Sanskrit-style parts in Khmer script:
+   16 prefixes x 16 suffixes = 256 unique scripture-like words. */
+const PRE = [
+  "ធម្ម", "មេត្ត", "បុញ្ញ", "សីល", "បញ្ញា", "សទ្ធា", "វិរិយ", "សតិ",
+  "សមាធិ", "ខន្តី", "ករុណា", "មុទិតា", "ឧបេក្ខា", "សច្ច", "ចាគ", "វិមុត្តិ"
+];
+const SUF = [
+  "តា", "ភាវោ", "ញាណំ", "ធនំ", "ផលំ", "វន្តោ", "ចរិយា", "គុណោ",
+  "ពលំ", "វាចា", "កម្មំ", "ចិត្តំ", "សុខំ", "រតនំ", "មគ្គោ", "ទានំ"
+];
+const WORDS = [];
+for (const pre of PRE) for (const suf of SUF) WORDS.push(pre + suf);
+const WORD_INDEX = new Map(WORDS.map((w, i) => [w, i]));
+
+function bytesToWords(bytes) {
+  const out = [];
+  for (const b of bytes) out.push(WORDS[b]);
+  return out.join(" ");
+}
+
+function wordsToBytes(text) {
+  const words = text.trim().split(/[\s,។]+/).filter(Boolean);
+  if (words.length === 0) return null;
+  const bytes = new Uint8Array(words.length);
+  for (let i = 0; i < words.length; i++) {
+    if (!WORD_INDEX.has(words[i])) return null;
+    bytes[i] = WORD_INDEX.get(words[i]);
+  }
+  return bytes;
+}
+
+/* ---------- encoding helpers ---------- */
+
+function toBase64(bytes) {
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s);
+}
+
+function fromBase64(str) {
+  return Uint8Array.from(atob(str), c => c.charCodeAt(0));
+}
+
+/* ---------- crypto core ---------- */
+
+async function deriveKey(passphrase, salt, iterations) {
+  const material = await crypto.subtle.importKey(
+    "raw", te.encode(passphrase), "PBKDF2", false, ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+    material,
+    { name: "AES-GCM", length: 256 },
+    false,                       // non-extractable: key can't be read back out
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function encryptText(passphrase, plaintext) {
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_LEN));
+  const iv = crypto.getRandomValues(new Uint8Array(IV_LEN));
+  const key = await deriveKey(passphrase, salt, ITERATIONS);
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv }, key, te.encode(plaintext)
+  );
+  const packed = new Uint8Array(SALT_LEN + IV_LEN + ciphertext.byteLength);
+  packed.set(salt, 0);
+  packed.set(iv, SALT_LEN);
+  packed.set(new Uint8Array(ciphertext), SALT_LEN + IV_LEN);
+  return bytesToWords(packed);
+}
+
+async function decryptText(passphrase, encoded) {
+  /* current format: Khmer-script word list */
+  const wordBytes = wordsToBytes(encoded);
+  if (wordBytes) {
+    const salt = wordBytes.slice(0, SALT_LEN);
+    const iv = wordBytes.slice(SALT_LEN, SALT_LEN + IV_LEN);
+    const ciphertext = wordBytes.slice(SALT_LEN + IV_LEN);
+    const key = await deriveKey(passphrase, salt, ITERATIONS);
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv }, key, ciphertext
+    );
+    return td.decode(plaintext);
+  }
+  /* older formats: "v2." + base64, or legacy base64 */
+  const isV2 = encoded.startsWith(PREFIX);
+  const iterations = isV2 ? ITERATIONS : LEGACY_ITERATIONS;
+  const raw = fromBase64(isV2 ? encoded.slice(PREFIX.length) : encoded);
+  const salt = raw.slice(0, SALT_LEN);
+  const iv = raw.slice(SALT_LEN, SALT_LEN + IV_LEN);
+  const ciphertext = raw.slice(SALT_LEN + IV_LEN);
+  const key = await deriveKey(passphrase, salt, iterations);
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv }, key, ciphertext
+  );
+  return td.decode(plaintext);
+}
+
+/* ---------- interface ---------- */
+
+/* Locky the mascot: reacts to what happens */
+function lockyMood(mood) {
+  const locky = $("locky");
+  locky.classList.remove("happy", "sad", "open");
+  void locky.offsetWidth; /* restart animation */
+  if (mood === "locked") {
+    locky.classList.add("happy");
+    $("mouth-happy").setAttribute("opacity", "1");
+    $("mouth-flat").setAttribute("opacity", "0");
+  } else if (mood === "unlocked") {
+    locky.classList.add("open", "happy");
+    $("mouth-happy").setAttribute("opacity", "1");
+    $("mouth-flat").setAttribute("opacity", "0");
+  } else if (mood === "error") {
+    locky.classList.add("sad");
+    $("mouth-happy").setAttribute("opacity", "0");
+    $("mouth-flat").setAttribute("opacity", "1");
+  } else {
+    $("mouth-happy").setAttribute("opacity", "0");
+    $("mouth-flat").setAttribute("opacity", "1");
+  }
+}
+
+function showError(message) {
+  lockyMood("error");
+  $("err").textContent = message;
+  $("err").style.display = "block";
+  $("ok").style.display = "none";
+  $("outwrap").style.display = "none";
+}
+
+function showResult(text, notice) {
+  $("err").style.display = "none";
+  $("ok").textContent = notice;
+  $("ok").style.display = notice ? "block" : "none";
+  $("output").value = text;
+  $("outwrap").style.display = "block";
+}
+
+function wipeAll() {
+  for (const id of ["pass", "input", "output"]) $(id).value = "";
+  $("outwrap").style.display = "none";
+  $("err").style.display = "none";
+  $("ok").style.display = "none";
+  lockyMood("neutral");
+  $("locky").classList.remove("open");
+}
+
+/* Auto-wipe: any activity resets the 2-minute timer */
+let wipeTimer;
+function armWipeTimer() {
+  clearTimeout(wipeTimer);
+  wipeTimer = setTimeout(wipeAll, WIPE_AFTER_MS);
+}
+for (const evt of ["input", "click", "keydown"]) {
+  document.addEventListener(evt, armWipeTimer);
+}
+armWipeTimer();
+
+$("show").onclick = () => {
+  const field = $("pass");
+  const hidden = field.type === "password";
+  field.type = hidden ? "text" : "password";
+  $("show").textContent = hidden ? "Hide" : "Show";
+};
+
+$("enc").onclick = async () => {
+  const passphrase = $("pass").value;
+  const text = $("input").value;
+  if (!passphrase) return showError("Enter your master key first");
+  if (passphrase.length < 8) return showError("Use a longer master key — at least 8 characters, ideally a 4-word passphrase");
+  if (!text) return showError("Enter the text you want to encrypt");
+  try {
+    const encoded = await encryptText(passphrase, text);
+    lockyMood("locked");
+    showResult(encoded, "Encrypted and disguised. Copy this word list into your note.");
+  } catch (e) {
+    showError("Encryption failed — try again");
+  }
+};
+
+$("dec").onclick = async () => {
+  const passphrase = $("pass").value;
+  const text = $("input").value.trim();
+  if (!passphrase) return showError("Enter your master key first");
+  if (!text) return showError("Paste the encrypted text");
+  try {
+    const plaintext = await decryptText(passphrase, text);
+    lockyMood("unlocked");
+    showResult(plaintext, "Decrypted.");
+  } catch (e) {
+    showError("Couldn't decrypt — wrong key, or the text was changed");
+  }
+};
+
+$("copy").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($("output").value);
+  } catch (e) {
+    $("output").select();
+    document.execCommand("copy");
+  }
+  $("copy").textContent = "Copied";
+  setTimeout(() => { $("copy").textContent = "Copy result"; }, 1500);
+};
+
+$("wipe").onclick = wipeAll;
+</script>
+</body>
+</html>
