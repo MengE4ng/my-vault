@@ -10,444 +10,85 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Egyptian+Hieroglyphs&display=swap"
     rel="stylesheet">
-  <style>
-    :root {
-      --paper: #EAECEF;
-      --panel: #FDFDFB;
-      --ink: #15171C;
-      --ink-soft: #5A606B;
-      --line: #D3D7DD;
-      --brass: #B98A2E;
-      /* the key: brass, warm, the one signal color */
-      --brass-deep: #8A6414;
-      --cipher: #2C7A6B;
-      /* transformed / unreadable state */
-      --danger: #B23A2E;
-      --shadow: 0 1px 0 rgba(21, 23, 28, .04), 0 10px 30px -12px rgba(21, 23, 28, .28);
-    }
-
-    * {
-      box-sizing: border-box
-    }
-
-    html,
-    body {
-      margin: 0;
-      padding: 0
-    }
-
-    body {
-      background:
-        radial-gradient(1200px 600px at 80% -10%, rgba(185, 138, 46, .10), transparent 60%),
-        var(--paper);
-      color: var(--ink);
-      font-family: "Space Grotesk", system-ui, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
-      line-height: 1.5;
-    }
-
-    .wrap {
-      max-width: 920px;
-      margin: 0 auto;
-      padding: 48px 24px 80px
-    }
-
-    /* header */
-    .eyebrow {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 12px;
-      letter-spacing: .28em;
-      text-transform: uppercase;
-      color: var(--brass-deep);
-      margin: 0 0 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .eyebrow::before {
-      content: "";
-      width: 26px;
-      height: 1px;
-      background: var(--brass)
-    }
-
-    h1 {
-      font-size: clamp(34px, 6vw, 56px);
-      line-height: 1.02;
-      font-weight: 700;
-      letter-spacing: -.02em;
-      margin: 0 0 10px;
-    }
-
-    h1 .cut {
-      color: var(--ink-soft)
-    }
-
-    .lede {
-      max-width: 52ch;
-      color: var(--ink-soft);
-      font-size: 16px;
-      margin: 0
-    }
-
-    .lede code {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 13px;
-      color: var(--ink)
-    }
-
-    /* mode toggle */
-    .modes {
-      display: flex;
-      gap: 0;
-      margin: 34px 0 22px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      overflow: hidden;
-      width: fit-content;
-      background: var(--panel);
-      box-shadow: var(--shadow)
-    }
-
-    .modes button {
-      appearance: none;
-      border: 0;
-      background: transparent;
-      cursor: pointer;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 13px;
-      letter-spacing: .04em;
-      padding: 11px 22px;
-      color: var(--ink-soft);
-      transition: .18s;
-    }
-
-    .modes button[aria-selected="true"] {
-      background: var(--ink);
-      color: var(--panel)
-    }
-
-    .modes button:focus-visible {
-      outline: 2px solid var(--brass);
-      outline-offset: -2px
-    }
-
-    /* panels */
-    .stack {
-      display: grid;
-      gap: 18px
-    }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 20px 20px 18px;
-      box-shadow: var(--shadow);
-    }
-
-    .panel-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 12px;
-      gap: 12px
-    }
-
-    .panel-head label {
-      font-weight: 600;
-      font-size: 15px
-    }
-
-    .hint {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 11.5px;
-      color: var(--ink-soft)
-    }
-
-    textarea,
-    input[type=text],
-    input[type=password] {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #fff;
-      padding: 14px;
-      color: var(--ink);
-      font-family: "Noto Sans Egyptian Hieroglyphs", "IBM Plex Mono", monospace;
-      font-size: 14px;
-      resize: vertical;
-      transition: border-color .15s, box-shadow .15s;
-    }
-
-    textarea {
-      min-height: 120px;
-      line-height: 1.6
-    }
-
-    textarea:focus,
-    input:focus {
-      outline: 0;
-      border-color: var(--brass);
-      box-shadow: 0 0 0 3px rgba(185, 138, 46, .16)
-    }
-
-    textarea.cipher {
-      color: var(--cipher);
-      word-break: break-all;
-      font-size: 20px;
-      line-height: 1.55
-    }
-
-    /* key row */
-    .keyrow {
-      display: flex;
-      gap: 10px;
-      align-items: stretch
-    }
-
-    .keyrow input {
-      flex: 1
-    }
-
-    .keyrow .icon-btn {
-      border: 1px solid var(--line);
-      background: #fff;
-      border-radius: 10px;
-      width: 48px;
-      cursor: pointer;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 12px;
-      color: var(--ink-soft);
-      display: grid;
-      place-items: center;
-      transition: .15s;
-    }
-
-    .keyrow .icon-btn:hover {
-      border-color: var(--brass);
-      color: var(--brass-deep)
-    }
-
-    .keyrow .icon-btn:focus-visible {
-      outline: 2px solid var(--brass);
-      outline-offset: 2px
-    }
-
-    /* the signature: the obfuscated key readout */
-    .vault {
-      margin-top: 14px;
-      border: 1px dashed var(--line);
-      border-radius: 12px;
-      padding: 14px 16px;
-      background: linear-gradient(180deg, #fff, #faf7ef);
-    }
-
-    .vault .cap {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 11px;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-      color: var(--brass-deep);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      gap: 10px;
-    }
-
-    .vault .cap .lock {
-      font-size: 13px
-    }
-
-    .vault-tools {
-      display: flex;
-      align-items: center;
-      gap: 8px
-    }
-
-    .mini {
-      appearance: none;
-      border: 1px solid var(--line);
-      background: #fff;
-      border-radius: 7px;
-      cursor: pointer;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 10px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      padding: 4px 9px;
-      color: var(--brass-deep);
-      transition: .15s;
-    }
-
-    .mini:hover {
-      border-color: var(--brass);
-      background: #fbf6ea
-    }
-
-    .mini:focus-visible {
-      outline: 2px solid var(--brass);
-      outline-offset: 2px
-    }
-
-    .glyphs {
-      font-family: "Noto Sans Egyptian Hieroglyphs", "IBM Plex Mono", monospace;
-      font-size: 19px;
-      line-height: 1.8;
-      letter-spacing: .04em;
-      color: var(--ink);
-      word-break: break-all;
-      min-height: 1.8em;
-    }
-
-    .glyphs.idle {
-      color: var(--ink-soft);
-      opacity: .6
-    }
-
-    .vault .note {
-      margin-top: 8px;
-      font-size: 11.5px;
-      color: var(--ink-soft)
-    }
-
-    /* action */
-    .actionbar {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-top: 4px
-    }
-
-    .go {
-      appearance: none;
-      border: 0;
-      cursor: pointer;
-      background: var(--ink);
-      color: var(--panel);
-      font-family: "Space Grotesk", sans-serif;
-      font-weight: 600;
-      font-size: 15px;
-      padding: 14px 26px;
-      border-radius: 12px;
-      letter-spacing: .01em;
-      transition: transform .08s, background .2s;
-      box-shadow: var(--shadow);
-    }
-
-    .go:hover {
-      background: #000
-    }
-
-    .go:active {
-      transform: translateY(1px)
-    }
-
-    .go:focus-visible {
-      outline: 2px solid var(--brass);
-      outline-offset: 3px
-    }
-
-    .go[disabled] {
-      opacity: .45;
-      cursor: not-allowed
-    }
-
-    .ghost {
-      appearance: none;
-      background: transparent;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 13px 18px;
-      cursor: pointer;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 13px;
-      color: var(--ink-soft);
-      transition: .15s;
-    }
-
-    .ghost:hover {
-      border-color: var(--ink);
-      color: var(--ink)
-    }
-
-    .status {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 12.5px;
-      color: var(--ink-soft);
-      margin-left: auto
-    }
-
-    .status.ok {
-      color: var(--cipher)
-    }
-
-    .status.err {
-      color: var(--danger)
-    }
-
-    /* output copy button */
-    .copy {
-      appearance: none;
-      border: 1px solid var(--line);
-      background: #fff;
-      border-radius: 8px;
-      cursor: pointer;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 11.5px;
-      padding: 5px 12px;
-      color: var(--ink-soft);
-      transition: .15s;
-    }
-
-    .copy:hover {
-      border-color: var(--brass);
-      color: var(--brass-deep)
-    }
-
-    footer {
-      margin-top: 34px;
-      color: var(--ink-soft);
-      font-size: 12.5px;
-      line-height: 1.7;
-      max-width: 64ch
-    }
-
-    footer b {
-      color: var(--ink);
-      font-weight: 600
-    }
-
-    footer .mono {
-      font-family: "IBM Plex Mono", monospace
-    }
-
-    @media (max-width:560px) {
-      .wrap {
-        padding: 32px 16px 64px
-      }
-
-      .status {
-        margin-left: 0;
-        width: 100%
-      }
-    }
-
-    @media (prefers-reduced-motion:reduce) {
-      * {
-        scroll-behavior: auto
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="./assets/style.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 
 <body>
-  <div class="wrap">
-    <p class="eyebrow">local · offline · nothing leaves this page</p>
+
+  <!-- GATE: theatrical vault-door treatment -->
+  <div class="wrap gate" id="gate" style="display:none;">
+    <div class="doorL" aria-hidden="true"></div>
+    <div class="doorR" aria-hidden="true"></div>
+    <div class="flash" aria-hidden="true"></div>
+
+    <div class="gate-content">
+      <p class="eyebrow">nothing leaves this page</p>
+      <h1>Ciphersmith<span class="cut">.</span></h1>
+      <p class="lede">Sign in to enter. Your secret and messages still never leave this device — this only checks who
+        you are.</p>
+
+      <div class="mode-tabs-row">
+        <div class="modes" role="tablist" aria-label="Auth mode">
+          <button id="auth-tab-signin" role="tab" aria-selected="true" onclick="setAuthMode('signin')">enter</button>
+          <button id="auth-tab-signup" role="tab" aria-selected="false" onclick="setAuthMode('signup')">create seal</button>
+        </div>
+        <button id="muteToggle" class="mute-btn" type="button" title="Mute/unmute sound and vibration" onclick="toggleMute()">🔊</button>
+      </div>
+
+      <div class="auth-card">
+        <div class="panel-inner" id="authPanel">
+          <div class="crack-overlay" id="crackOverlay" aria-hidden="true"></div>
+          <div class="panel-head">
+            <label for="authEmail">Your name</label>
+            <span class="hint">email</span>
+          </div>
+          <input class="" id="authEmail" type="email" autocomplete="username" placeholder="you@example.com">
+
+          <div class="panel-head panel-head--tight">
+            <label for="authPassword">Your seal</label>
+            <span class="hint">password</span>
+          </div>
+          <input id="authPassword" type="password" autocomplete="current-password" placeholder="••••••••">
+          <div class="seal-strip idle" id="sealStrip">— begin carving your seal —</div>
+
+          <button type="button" class="link-btn" id="forgotLink" onclick="setAuthMode('reset')">forgot your seal?</button>
+        </div>
+
+        <!-- shown only in reset mode: request a recovery email -->
+        <div class="panel-inner" id="resetPanel" style="display:none;">
+          <div class="panel-head">
+            <label for="resetEmail">Your name</label>
+            <span class="hint">we'll send a recovery scroll here</span>
+          </div>
+          <input id="resetEmail" type="email" autocomplete="username" placeholder="you@example.com">
+          <button type="button" class="link-btn" onclick="setAuthMode('signin')">back to enter</button>
+        </div>
+
+        <!-- shown only after clicking a valid recovery link: set a new seal -->
+        <div class="panel-inner" id="newSealPanel" style="display:none;">
+          <div class="panel-head">
+            <label for="newSeal">New seal</label>
+            <span class="hint">choose a fresh password</span>
+          </div>
+          <input id="newSeal" type="password" autocomplete="new-password" placeholder="••••••••">
+        </div>
+
+        <div class="actionbar auth-actions">
+          <button class="go" id="authGo" onclick="runAuth()">Enter</button>
+          <span class="status" id="authStatus"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" id="app" style="display:none;">
+    <p class="eyebrow">
+      <span>  nothing leaves this page</span>
+      <span class="whoami-wrap"><span id="whoami" class="mono"></span> <button class="mini" type="button"
+          onclick="signOut()">reseal ↩</button></span>
+    </p>
     <h1>Ciphersmith<span class="cut">.</span></h1>
     <p class="lede">Turn readable text into a <code>𓀀𓁐𓃀</code> stream of hieroglyphs with a secret only you know —
       then obfuscate that secret into glyphs too, and paste them back in to decrypt.</p>
@@ -486,7 +127,7 @@
             <span>your secret, obfuscated</span>
             <span class="vault-tools">
               <button class="mini" type="button" id="copyKey" onclick="copyKey()">copy</button>
-              <button class="mini" type="button" id="useKey" onclick="useKey()">use ↑</button>
+              <button class="mini" type="button" id="useKey" onclick="useKey()">use↑</button>
               <span class="lock" id="lock">🔒</span>
             </span>
           </div>
@@ -512,6 +153,22 @@
         </div>
         <textarea id="output" class="cipher" spellcheck="false" readonly placeholder="Result appears here…"></textarea>
       </div>
+
+      <!-- SAVED MESSAGES: only ciphertext is ever stored — never your
+           secret or the plaintext, saving or not -->
+      <div class="panel" id="vaultLibraryPanel">
+        <div class="panel-head">
+          <label>Saved messages</label>
+          <span class="hint">stores ciphertext only — never your secret or plaintext</span>
+        </div>
+        <div class="save-row">
+          <input id="saveLabel" type="text" placeholder="label this message (optional)">
+          <button class="ghost" id="saveBtn" type="button" onclick="saveCurrentCipher()">save current ciphertext</button>
+        </div>
+        <div id="savedList" class="saved-list">
+          <div class="saved-empty">no saved messages yet</div>
+        </div>
+      </div>
     </div>
 
     <footer>
@@ -520,298 +177,16 @@
       time, so identical messages never produce identical output. The resulting bytes (<span class="mono">salt + iv +
         ciphertext</span>) are mapped one-to-one onto Egyptian hieroglyphs from Unicode block <span
         class="mono">U+13000</span> — each glyph is exactly one byte, so it decodes back perfectly. Everything runs on
-      your device — there is no server, and nothing is sent anywhere. Keep your secret safe: without it, the hieroglyphs
-      are unrecoverable.
+      your device — nothing is sent anywhere. Keep your secret safe: without it, the hieroglyphs are unrecoverable.
+      <br><br>Signing in only checks who you are, using Supabase — it never sees your secret or your message.
+      If you choose to save a message, only the ciphertext (already unreadable without your secret) is stored —
+      your secret and plaintext are never sent anywhere, saved or not.
     </footer>
   </div>
+  <script src="./assets/config.js"></script>
+  <script src="./assets/auth.js"></script>
+  <script src="./assets/script.js"></script>
 
-  <script>
-    const enc = new TextEncoder();
-    const dec = new TextDecoder();
-    const ITER = 250000;
-    let mode = 'encrypt';
-
-    const $ = id => document.getElementById(id);
-
-    /* ---------- byte / base64 helpers ---------- */
-    function bytesToB64(bytes) {
-      let bin = '';
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-      return btoa(bin);
-    }
-    function b64ToBytes(b64) {
-      const bin = atob(b64.trim());
-      const out = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-      return out;
-    }
-    function bytesToHex(bytes) {
-      return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    /* ---------- hieroglyph encoding (1 byte -> 1 glyph, bijective) ---------- */
-    const GLYPH_BASE = 0x13000;              // Egyptian Hieroglyphs block start
-    const GLYPH_POOL = [];
-    for (let i = 0; i < 256; i++) GLYPH_POOL.push(String.fromCodePoint(GLYPH_BASE + i));
-    const randGlyph = () => GLYPH_POOL[(Math.random() * 256) | 0];
-
-    function bytesToGlyphs(bytes) {
-      let s = '';
-      for (let i = 0; i < bytes.length; i++) s += GLYPH_POOL[bytes[i]];
-      return s;
-    }
-    function glyphsToBytes(str) {
-      const chars = Array.from(str.trim().replace(/\s+/g, '')); // split by code point
-      const out = new Uint8Array(chars.length);
-      for (let i = 0; i < chars.length; i++) {
-        const v = chars[i].codePointAt(0) - GLYPH_BASE;
-        if (v < 0 || v > 255) throw new Error('not a valid glyph');
-        out[i] = v;
-      }
-      return out;
-    }
-
-    /* ---------- reversible secret <-> hieroglyphs ---------- */
-    function secretToGlyphs(secret) {
-      return bytesToGlyphs(enc.encode(secret));   // UTF-8 bytes -> glyphs
-    }
-    function glyphsToSecret(glyphStr) {
-      return dec.decode(glyphsToBytes(glyphStr)); // glyphs -> UTF-8 bytes -> string
-    }
-    function isGlyphString(s) {
-      const t = s.trim();
-      if (!t) return false;
-      for (const ch of t) {
-        const cp = ch.codePointAt(0);
-        if (cp < GLYPH_BASE || cp > GLYPH_BASE + 255) return false;
-      }
-      return true;
-    }
-    // Resolve whatever is in the field to the real secret (decode if obfuscated)
-    function resolveSecret(raw) {
-      return isGlyphString(raw) ? glyphsToSecret(raw) : raw;
-    }
-
-    /* ---------- key derivation ---------- */
-    async function importBase(secret) {
-      return crypto.subtle.importKey('raw', enc.encode(secret), 'PBKDF2', false, ['deriveKey', 'deriveBits']);
-    }
-    async function deriveAesKey(base, salt) {
-      return crypto.subtle.deriveKey(
-        { name: 'PBKDF2', salt, iterations: ITER, hash: 'SHA-256' },
-        base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
-      );
-    }
-
-    /* ---------- encrypt / decrypt ---------- */
-    async function encryptText(plain, secret) {
-      const base = await importBase(secret);
-      const salt = crypto.getRandomValues(new Uint8Array(16));
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const key = await deriveAesKey(base, salt);
-      const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plain)));
-
-      const packed = new Uint8Array(salt.length + iv.length + ct.length);
-      packed.set(salt, 0);
-      packed.set(iv, salt.length);
-      packed.set(ct, salt.length + iv.length);
-
-      return bytesToGlyphs(packed);
-    }
-
-    async function decryptText(blob, secret) {
-      const packed = glyphsToBytes(blob);
-      if (packed.length < 29) throw new Error('too short');
-      const salt = packed.slice(0, 16);
-      const iv = packed.slice(16, 28);
-      const ct = packed.slice(28);
-      const base = await importBase(secret);
-      const key = await deriveAesKey(base, salt);
-      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
-      return dec.decode(pt);
-    }
-
-    /* ---------- signature animation: scramble-settle the obfuscated key ---------- */
-    function animateGlyphs(target) {
-      const el = $('glyphs');
-      el.classList.remove('idle');
-      const chars = Array.from(target);            // one entry per glyph (handles surrogate pairs)
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reduce) { el.textContent = target; return; }
-      const total = chars.length;
-      let frame = 0;
-      const settleAt = i => Math.floor(i * 0.6);
-      clearInterval(el._anim);
-      el._anim = setInterval(() => {
-        let s = '';
-        for (let i = 0; i < total; i++) {
-          s += (frame >= settleAt(i)) ? chars[i] : randGlyph();
-        }
-        el.textContent = s;
-        frame++;
-        if (frame > settleAt(total) + 2) { clearInterval(el._anim); el.textContent = target; }
-      }, 28);
-    }
-
-    /* ---------- output reveal ---------- */
-    function revealOutput(text) {
-      const el = $('output');
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reduce || mode === 'decrypt') { el.value = text; return; }
-      const chars = Array.from(text);              // encrypt output is glyphs
-      let frame = 0;
-      clearInterval(el._anim);
-      el._anim = setInterval(() => {
-        let s = '';
-        for (let i = 0; i < chars.length; i++) {
-          s += (Math.floor(i * 0.5) <= frame) ? chars[i] : randGlyph();
-        }
-        el.value = s;
-        frame++;
-        if (Math.floor(chars.length * 0.5) <= frame) { clearInterval(el._anim); el.value = text; }
-      }, 16);
-    }
-
-    /* ---------- run ---------- */
-    async function run() {
-      const input = $('input').value;
-      const raw = $('secret').value;
-      const status = $('status');
-      status.className = 'status';
-      status.textContent = '';
-
-      if (!raw) { status.textContent = 'enter a secret key'; status.className = 'status err'; return; }
-      if (!input) { status.textContent = 'nothing to ' + mode; status.className = 'status err'; return; }
-
-      // If the field holds an obfuscated (hieroglyph) key, decode it back to the real secret.
-      let secret;
-      try {
-        secret = resolveSecret(raw);
-      } catch (e) {
-        status.textContent = 'that obfuscated key is malformed';
-        status.className = 'status err';
-        return;
-      }
-      if (!secret) { status.textContent = 'decoded key is empty'; status.className = 'status err'; return; }
-
-      $('go').disabled = true;
-      status.textContent = 'working…';
-      try {
-        const out = mode === 'encrypt' ? await encryptText(input, secret) : await decryptText(input, secret);
-        animateGlyphs(secretToGlyphs(secret));   // show the reversible obfuscated key
-        revealOutput(out);
-        $('lock').textContent = '🔓';
-        setTimeout(() => { $('lock').textContent = '🔒'; }, 900);
-        status.textContent = mode === 'encrypt' ? 'encrypted ✓' : 'decrypted ✓';
-        status.className = 'status ok';
-      } catch (e) {
-        $('output').value = '';
-        status.textContent = mode === 'encrypt' ? 'could not encrypt' : 'wrong secret or corrupted text';
-        status.className = 'status err';
-      } finally {
-        $('go').disabled = false;
-      }
-    }
-
-    /* live-update the obfuscated-key readout as the secret is typed */
-    function refreshVault() {
-      const raw = $('secret').value;
-      const el = $('glyphs');
-      if (!raw) {
-        el.textContent = '— type a secret to obfuscate it —';
-        el.classList.add('idle');
-        return;
-      }
-      el.classList.remove('idle');
-      try {
-        // If they've pasted an obfuscated key, echo it; otherwise obfuscate the plain secret.
-        el.textContent = isGlyphString(raw) ? raw.trim() : secretToGlyphs(raw);
-      } catch (e) {
-        el.textContent = raw;
-      }
-    }
-
-    /* ---------- ui plumbing ---------- */
-    function setMode(m) {
-      mode = m;
-      const isEnc = m === 'encrypt';
-      $('tab-enc').setAttribute('aria-selected', isEnc);
-      $('tab-dec').setAttribute('aria-selected', !isEnc);
-      $('inputLabel').textContent = isEnc ? 'Plain text' : 'Ciphertext';
-      $('inputHint').textContent = isEnc ? 'what you want to hide' : 'paste the hieroglyphs';
-      $('outputLabel').textContent = isEnc ? 'Ciphertext' : 'Plain text';
-      $('go').textContent = isEnc ? 'Encrypt' : 'Decrypt';
-      $('output').classList.toggle('cipher', isEnc);
-      $('input').value = ''; $('output').value = '';
-      $('input').placeholder = isEnc ? 'Type or paste your message…' : 'Paste the hieroglyphs…';
-      $('output').placeholder = isEnc ? 'Result appears here…' : 'Decrypted message appears here…';
-      refreshVault();
-      $('status').textContent = ''; $('status').className = 'status';
-    }
-    function toggleReveal() {
-      const s = $('secret'), b = $('reveal');
-      const show = s.type === 'password';
-      s.type = show ? 'text' : 'password';
-      b.textContent = show ? 'hide' : 'show';
-    }
-    function clearAll() {
-      $('input').value = ''; $('output').value = ''; $('secret').value = '';
-      refreshVault();
-      $('status').textContent = ''; $('status').className = 'status';
-    }
-    async function copyOut() {
-      const v = $('output').value;
-      if (!v) return;
-      try { await navigator.clipboard.writeText(v); flash('copied ✓'); }
-      catch { $('output').select(); document.execCommand('copy'); flash('copied ✓'); }
-    }
-    // copy the obfuscated secret
-    async function copyKey() {
-      const raw = $('secret').value;
-      if (!raw) { flashErr('no secret yet'); return; }
-      let g;
-      try { g = isGlyphString(raw) ? raw.trim() : secretToGlyphs(raw); }
-      catch { flashErr('cannot obfuscate'); return; }
-      try { await navigator.clipboard.writeText(g); flash('key copied ✓'); }
-      catch { flashErr('copy failed'); }
-    }
-    // drop the obfuscated secret straight into the field, ready to decrypt with
-    function useKey() {
-      const raw = $('secret').value;
-      if (!raw) { flashErr('no secret yet'); return; }
-      if (isGlyphString(raw)) { flash('already obfuscated'); return; }
-      let g;
-      try { g = secretToGlyphs(raw); }
-      catch { flashErr('cannot obfuscate'); return; }
-      const s = $('secret');
-      s.value = g;
-      s.type = 'text';                 // glyphs are safe to show; the real secret stays hidden
-      $('reveal').textContent = 'hide';
-      refreshVault();
-      flash('field now holds the obfuscated key');
-    }
-    function flash(msg) {
-      const s = $('status'); s.textContent = msg; s.className = 'status ok';
-    }
-    function flashErr(msg) {
-      const s = $('status'); s.textContent = msg; s.className = 'status err';
-    }
-
-    /* live obfuscation as you type + shortcuts */
-    document.getElementById('secret').addEventListener('input', refreshVault);
-    document.addEventListener('keydown', e => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') run();
-    });
-
-    /* guard: crypto must exist */
-    if (!window.crypto || !crypto.subtle) {
-      document.addEventListener('DOMContentLoaded', () => {
-        $('status').textContent = 'this browser has no Web Crypto — open over https:// or file://';
-        $('status').className = 'status err';
-        $('go').disabled = true;
-      });
-    }
-  </script>
 </body>
 
 </html>
